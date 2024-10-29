@@ -73,7 +73,7 @@ pub fn create_concentrated_liquidity_pool_instructions<C: Client>(
   let decimals_b = mint_b.decimals;
   let token_program_b = mint_b_info.owner;
 
-  let initial_sqrt_price = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
+  let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b).into();
 
   let pool_address = get_whirlpool_address(
     &*WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?,
@@ -131,7 +131,7 @@ pub fn create_concentrated_liquidity_pool_instructions<C: Client>(
   let full_range = get_full_range_tick_indexes(tick_spacing);
   let lower_tick_index = get_tick_array_start_tick_index(full_range.tick_lower_index, tick_spacing);
   let upper_tick_index = get_tick_array_start_tick_index(full_range.tick_upper_index, tick_spacing);
-  let initial_tick_index =  sqrt_price_to_tick_index(initial_sqrt_price);
+  let initial_tick_index =  sqrt_price_to_tick_index(initial_sqrt_price.into());
   let current_tick_index = get_tick_array_start_tick_index(initial_tick_index, tick_spacing);
 
   let tick_array_indexes = HashSet::from([lower_tick_index, upper_tick_index, current_tick_index]);
