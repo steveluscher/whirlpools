@@ -2,13 +2,24 @@
 name = "orca_whirlpools"
 version = "0.1.0"
 description = "Orca's high-level rust sdk to interact with Orca's on-chain Whirlpool program."
+include = ["src/*"]
 documentation = "https://orca-so.github.io/whirlpools/"
 homepage = "https://orca.so"
 repository = "https://github.com/orca-so/whirlpools"
 license = "Apache-2.0"
 keywords = ["solana", "crypto", "defi", "dex", "amm"]
+authors = ["team@orca.so"]
 edition = "2021"
 
+[features]
+default = []
+
 [dependencies]
+solana-sdk = { version = "^1.18" }
+spl-token = { version = "^6.0" }
+spl-token-2022 = { version = "^5.0" }
 orca_whirlpools_core = { path = "../core" }
-orca_whirlpools_client = { path = "../client" }
+orca_whirlpools_client = { path = "../client", features = ["core-types"] }
+
+[dev-dependencies]
+serial_test = { version = "^3.1" }
