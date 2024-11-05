@@ -55,7 +55,7 @@ pub fn set_slippage_tolerance_bps(tolerance: u16) -> Result<(), Box<dyn Error>> 
 
 /// Defines the strategy for handling SOL wrapping in a transaction.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SolWrappingMode {
+pub enum NativeMintWrappingStrategy {
   /// Creates an auxiliary token account using a keypair. Optionally adds funds to the account. Closes it at the end of the transaction.
   Keypair,
   /// Functions similarly to Keypair, but uses a seed account instead.
@@ -66,15 +66,15 @@ pub enum SolWrappingMode {
   None,
 }
 
-/// The default SOL wrapping mode.
-pub const DEFAULT_SOL_WRAPPING_MODE: SolWrappingMode = SolWrappingMode::Keypair;
+/// The default SOL wrapping strategy.
+pub const DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY: NativeMintWrappingStrategy = NativeMintWrappingStrategy::Keypair;
 
-/// The currently selected SOL wrapping mode.
-pub static SOL_WRAPPING_MODE: Mutex<SolWrappingMode> = Mutex::new(DEFAULT_SOL_WRAPPING_MODE);
+/// The currently selected SOL wrapping strategy.
+pub static NATIVE_MINT_WRAPPING_STRATEGY: Mutex<NativeMintWrappingStrategy> = Mutex::new(DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY);
 
-/// Sets the currently selected SOL wrapping mode.
-pub fn set_sol_wrapping_mode(mode: SolWrappingMode) -> Result<(), Box<dyn Error>> {
-  *SOL_WRAPPING_MODE.try_lock()? = mode;
+/// Sets the currently selected SOL wrapping strategy.
+pub fn set_native_mint_wrapping_strategy(strategy: NativeMintWrappingStrategy) -> Result<(), Box<dyn Error>> {
+  *NATIVE_MINT_WRAPPING_STRATEGY.try_lock()? = strategy;
   Ok(())
 }
 
@@ -83,7 +83,7 @@ pub fn reset_configuration() -> Result<(), Box<dyn Error>> {
   *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS;
   *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? = DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
   *FUNDER.try_lock()? = DEFAULT_FUNDER;
-  *SOL_WRAPPING_MODE.try_lock()? = DEFAULT_SOL_WRAPPING_MODE;
+  *NATIVE_MINT_WRAPPING_STRATEGY.try_lock()? = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
   *SLIPPAGE_TOLERANCE_BPS.try_lock()? = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
   Ok(())
 }
@@ -124,10 +124,10 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_set_sol_wrapping_mode() {
-      let new_mode = SolWrappingMode::Ata;
-      set_sol_wrapping_mode(new_mode).unwrap();
-      assert_eq!(*SOL_WRAPPING_MODE.lock().unwrap(), new_mode);
+    fn test_set_sol_wrapping_strategy() {
+      let new_strategy = NativeMintWrappingStrategy::Ata;
+      set_native_mint_wrapping_strategy(new_strategy).unwrap();
+      assert_eq!(*NATIVE_MINT_WRAPPING_STRATEGY.lock().unwrap(), new_strategy);
     }
 
     #[test]
@@ -147,7 +147,7 @@ mod tests {
       assert_eq!(*WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(), config);
       assert_eq!(*WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(), extension);
       assert_eq!(*FUNDER.lock().unwrap(), Pubkey::default());
-      assert_eq!(*SOL_WRAPPING_MODE.lock().unwrap(), SolWrappingMode::Keypair);
+      assert_eq!(*NATIVE_MINT_WRAPPING_STRATEGY.lock().unwrap(), NativeMintWrappingStrategy::Keypair);
       assert_eq!(*SLIPPAGE_TOLERANCE_BPS.lock().unwrap(), 100);
     }
 }

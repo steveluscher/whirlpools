@@ -6,6 +6,7 @@ mod increase_liquidity;
 mod pool;
 mod position;
 mod swap;
+mod token;
 
 pub use config::*;
 pub use create_pool::*;
