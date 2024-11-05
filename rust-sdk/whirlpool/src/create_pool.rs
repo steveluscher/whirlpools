@@ -15,6 +15,7 @@ use solana_sdk::client::Client;
 use spl_token::solana_program::program_pack::Pack;
 use spl_token_2022::state::{Account, Mint};
 
+use crate::token::order_mints;
 use crate::{FUNDER, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS, WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS};
 
 /// Represents the instructions and metadata for creating a pool.
@@ -29,7 +30,7 @@ pub struct CreatePoolInstructions {
   pub pool_address: Pubkey,
 
   /// The list of signers for the instructions.
-  pub signers: Vec<Keypair>,
+  pub additional_signers: Vec<Keypair>,
 }
 
 pub fn create_splash_pool_instructions<C: Client>(
@@ -59,8 +60,12 @@ pub fn create_concentrated_liquidity_pool_instructions<C: Client>(
 ) -> Result<CreatePoolInstructions, Box<dyn Error>> {
   let initial_price = initial_price.unwrap_or(1.0);
   let funder = funder.unwrap_or(*FUNDER.try_lock()?);
-  assert!(funder != Pubkey::default(), "Funder must be provided");
-  assert!(token_a.to_bytes() < token_b.to_bytes(), "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)");
+  if funder != Pubkey::default() {
+    return Err("Funder must be provided".into());
+  }
+  if order_mints(token_a, token_b)[0] != token_a {
+    return Err("Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)".into());
+  }
 
   let mint_a_info = rpc.get_account(&token_a)?
     .ok_or(format!("Mint {} not found", token_a))?;
@@ -156,6 +161,6 @@ pub fn create_concentrated_liquidity_pool_instructions<C: Client>(
     instructions,
     est_initialization_cost,
     pool_address,
-    signers: vec![token_vault_a, token_vault_b],
+    additional_signers: vec![token_vault_a, token_vault_b],
   })
 }
