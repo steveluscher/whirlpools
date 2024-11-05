@@ -5,13 +5,13 @@ use orca_whirlpools_client::accounts::{TickArray, Whirlpool};
 use orca_whirlpools_client::instructions::{InitializePoolV2, InitializePoolV2InstructionArgs, InitializeTickArray, InitializeTickArrayInstructionArgs};
 use orca_whirlpools_client::{get_fee_tier_address, get_tick_array_address, get_token_badge_address, get_whirlpool_address};
 use orca_whirlpools_core::{get_full_range_tick_indexes, get_tick_array_start_tick_index, price_to_sqrt_price, sqrt_price_to_tick_index};
-use solana_sdk::rent::Rent;
+use solana_program::rent::Rent;
+use solana_program::system_program;
+use solana_program::sysvar::SysvarId;
+use solana_program::{instruction::Instruction, pubkey::Pubkey};
+use solana_client::rpc_client::RpcClient;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
-use solana_sdk::system_program;
-use solana_sdk::sysvar::SysvarId;
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
-use solana_sdk::client::Client;
 use spl_token::solana_program::program_pack::Pack;
 use spl_token_2022::state::{Account, Mint};
 
@@ -33,8 +33,8 @@ pub struct CreatePoolInstructions {
   pub additional_signers: Vec<Keypair>,
 }
 
-pub fn create_splash_pool_instructions<C: Client>(
-  rpc: &C,
+pub fn create_splash_pool_instructions(
+  rpc: &RpcClient,
   token_a: Pubkey,
   token_b: Pubkey,
   initial_price: Option<f64>,
@@ -50,8 +50,8 @@ pub fn create_splash_pool_instructions<C: Client>(
   )
 }
 
-pub fn create_concentrated_liquidity_pool_instructions<C: Client>(
-  rpc: &C,
+pub fn create_concentrated_liquidity_pool_instructions(
+  rpc: &RpcClient,
   token_a: Pubkey,
   token_b: Pubkey,
   tick_spacing: u16,
@@ -67,12 +67,15 @@ pub fn create_concentrated_liquidity_pool_instructions<C: Client>(
     return Err("Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)".into());
   }
 
-  let mint_a_info = rpc.get_account(&token_a)?
+  let account_infos = rpc.get_multiple_accounts(&[token_a, token_b])?;
+  let mint_a_info = account_infos[0]
+    .as_ref()
     .ok_or(format!("Mint {} not found", token_a))?;
   let mint_a = Mint::unpack(&mint_a_info.data)?;
   let decimals_a = mint_a.decimals;
   let token_program_a = mint_a_info.owner;
-  let mint_b_info = rpc.get_account(&token_b)?
+  let mint_b_info = account_infos[1]
+    .as_ref()
     .ok_or(format!("Mint {} not found", token_b))?;
   let mint_b = Mint::unpack(&mint_b_info.data)?;
   let decimals_b = mint_b.decimals;

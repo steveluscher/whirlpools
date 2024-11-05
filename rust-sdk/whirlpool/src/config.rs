@@ -1,7 +1,7 @@
 use std::{error::Error, sync::Mutex};
 
 use orca_whirlpools_client::get_whirlpools_config_extension_address;
-use solana_sdk::pubkey::Pubkey;
+use solana_program::pubkey::Pubkey;
 
 /// The default address for the Whirlpools program's config account.
 pub const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
