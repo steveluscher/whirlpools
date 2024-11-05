@@ -93,8 +93,8 @@ pub async fn prepare_token_accounts_instructions<C: Client>(
         create_instructions.push(
             create_associated_token_account(
                 &owner,
-                owner,
-                mint_addresses[i],
+                &ata_address,
+                &mint_addresses[i],
                 mint_account_infos[i].owner
             )
         );
@@ -102,8 +102,12 @@ pub async fn prepare_token_accounts_instructions<C: Client>(
 
     if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Keypair {
         let keypair = Keypair::new();
-        let space = get_token_size(); // TODO: size is variable in token 2022?
-        let lamports = rpc.get_minimum_balance_for_rent_exemption(space)?;
+        let space = get_token_size();
+        let mut lamports = rpc.get_minimum_balance_for_rent_exemption(space)?;
+
+        if let TokenAccountStrategy::WithBalance(_, balance) = spec[native_mint_index.unwrap_or(0)] {
+            lamports += balance;
+        }
 
         create_instructions.push(system_instruction::create_account(
             &owner.pubkey(),
@@ -113,33 +117,78 @@ pub async fn prepare_token_accounts_instructions<C: Client>(
             &TOKEN_PROGRAM_ID,
         ));
 
+        create_instructions.push(
+            initialize_account3(
+                &TOKEN_PROGRAM_ID,
+                &keypair.pubkey(),
+                &NATIVE_MINT,
+                &owner,
+            )
+        );
+
         cleanup_instructions.push(get_close_account_instruction(&keypair.pubkey(), owner));
         token_account_addresses.insert(NATIVE_MINT, keypair.pubkey());
         additional_signers.push(keypair);
     }
 
     if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Seed {
+        let space = get_token_size();
+        let mut lamports = rpc.get_minimum_balance_for_rent_exemption(space)?;
 
-    }
-
-    let mut existing_native_mint_balance = 0;
-    if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Ata {
-        if let Some(native_ata_account) = ata_account_infos[native_mint_index.unwrap_or(0)] {
-            let token_account = Account::unpack(&native_ata_account.data.borrow())?;
-            existing_native_mint_balance = token_account.amount;
-        } else {
-            cleanup_instructions.push(close_account(&native_ata_account.key, owner));
+        if let TokenAccountStrategy::WithBalance(_, balance) = spec[native_mint_index.unwrap_or(0)] {
+            lamports += balance;
         }
+
+        // Generating secure seed takes longer and is not really needed here.
+        // With date, it should only create collisions if the same owner
+        // creates multiple accounts at exactly the same time (in ms)
+        let pubkey = Pubkey::new(hash(
+            [
+                owner.to_bytes().as_ref(),
+                &get_current_timestamp_in_ms().to_le_bytes(),
+                TOKEN_PROGRAM_ID.to_bytes().as_ref()
+            ].concat()
+        ));
+
+        create_instructions.push(
+            create_account_with_seed(
+                &owner,
+                &pubkey,
+                &TOKEN_PROGRAM_ID,
+            )
+        );
+
+        create_instructions.push(
+            initialize_account3(
+                &TOKEN_PROGRAM_ID,
+                &pubkey,
+                &NATIVE_MINT,
+                &owner,
+            )
+        );
+
+        cleanup_instructions.push(
+            get_close_account_instruction(&pubkey, owner)
+        );
+
+        token_account_addresses.insert(NATIVE_MINT, pubkey);
     }
 
-    if has_native_mint && native_mint_wrapping_strategy != NativeMintWrappingStrategy::None {
-        let native_mint_spec = spec[native_mint_index.unwrap_or(0)];
-        if let TokenAccountStrategy::WithBalance(_, required_balance) = native_mint_spec && existing_native_mint_balance < required_balance {
+    if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Ata {
+        let account_info = ata_account_infos[native_mint_index.unwrap_or(0)];
+
+        let existing_balance: u64 = if let Some(account_info) = account_info {
+            Account::unpack(&account_info.data.borrow())?.amount
+        } else {
+            0
+        };
+
+        if let TokenAccountStrategy::WithBalance(_, required_balance) = spec[native_mint_index.unwrap_or(0)] && existing_balance < required_balance {
             create_instructions.push(
                 system_instruction::transfer(
                     &owner.pubkey(),
                     &token_account_addresses[&NATIVE_MINT],
-                    required_balance - existing_native_mint_balance
+                    required_balance - existing_balance
                 )
             );
             create_instructions.push(
@@ -149,15 +198,19 @@ pub async fn prepare_token_accounts_instructions<C: Client>(
                 )
             );
         }
+
+        // If the ATA did not exist before, we close it at the end of the transaction.
+        if account_info.is_none() {
+            cleanup_instructions.push(close_account(&native_ata_account.key, owner));
+        }
     }
 
-
-    TokenAccountInstructions {
+    Ok(TokenAccountInstructions {
         create_instructions,
         cleanup_instructions,
         token_account_addresses,
         additional_signers,
-    }
+    })
 }
 
 pub fn get_current_transfer_fee(
@@ -182,5 +235,25 @@ pub fn order_mints(mint1: Pubkey, mint2: Pubkey) -> [Pubkey; 2] {
         [mint1, mint2]
     } else {
         [mint2, mint1]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_order_mints() {
+        let mint1 = Pubkey::from_str("Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa").unwrap();
+        let mint2 = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap();
+
+        let [mint_a, mint_b] = order_mints(mint1, mint2);
+        assert_eq!(mint_a, mint1);
+        assert_eq!(mint_b, mint2);
+
+        let [mint_c, mint_d] = order_mints(mint2, mint1);
+        assert_eq!(mint_c, mint1);
+        assert_eq!(mint_d, mint2);
     }
 }

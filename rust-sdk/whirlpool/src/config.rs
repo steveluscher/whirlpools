@@ -56,11 +56,16 @@ pub fn set_slippage_tolerance_bps(tolerance: u16) -> Result<(), Box<dyn Error>> 
 /// Defines the strategy for handling SOL wrapping in a transaction.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NativeMintWrappingStrategy {
-  /// Creates an auxiliary token account using a keypair. Optionally adds funds to the account. Closes it at the end of the transaction.
+  /// Creates an auxiliary token account using a keypair.
+  /// Optionally adds funds to the account.
+  /// Closes it at the end of the transaction.
   Keypair,
   /// Functions similarly to Keypair, but uses a seed account instead.
   Seed,
-  /// Creates an associated token account (ATA) for `NATIVE_MINT` if necessary. Optionally adds funds to the ATA. Closes it at the end of the transaction if it was newly created.
+  /// Treats the native balance and associated token account (ATA) for `NATIVE_MINT` as one.
+  /// Will create the ATA if it doesn't exist.
+  /// Optionally adds funds to the account.
+  /// Closes it at the end of the transaction if it did not exist before.
   Ata,
   /// Uses or creates the ATA without performing any SOL wrapping or unwrapping.
   None,
