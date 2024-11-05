@@ -169,7 +169,7 @@ export async function fetchConcentratedLiquidityPool(
  * @returns {Promise<PoolInfo[]>} - A promise that resolves to an array of pool information for each pool between the two tokens.
  *
  * @example
- * import { fetchWhirlpoolsByTokenPair } from '@orca-so/whirlpools';
+ * import { fetchWhirlpools } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -177,13 +177,13 @@ export async function fetchConcentratedLiquidityPool(
  * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";
  *
- * const pools = await fetchWhirlpoolsByTokenPair(
+ * const pools = await fetchWhirlpools(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo
  * );
  */
-export async function fetchWhirlpoolsByTokenPair(
+export async function fetchWhirlpools(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
