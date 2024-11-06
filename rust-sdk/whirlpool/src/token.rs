@@ -268,10 +268,10 @@ pub fn prepare_token_accounts_instructions(
 }
 
 pub fn get_current_transfer_fee(
-    mint_account_info: Option<SolanaAccount>,
+    mint_account_info: &SolanaAccount,
     current_epoch: u64,
 ) -> Option<TransferFee> {
-    let token_mint_data = mint_account_info?.data;
+    let token_mint_data = &mint_account_info.data;
     let token_mint_unpacked = StateWithExtensions::<Mint>::unpack(&token_mint_data).ok()?;
     if let Ok(transfer_fee_config) = token_mint_unpacked.get_extension::<TransferFeeConfig>() {
         let fee = transfer_fee_config.get_epoch_fee(current_epoch);

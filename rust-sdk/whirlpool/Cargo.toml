@@ -21,6 +21,7 @@ solana-account-decoder = { version = "^1.18" }
 solana-sdk = { version = "^1.18" }
 spl-token = { version = "^4.0" }
 spl-token-2022 = { version = "^3.0" }
+spl-memo = { version = "^4.0" }
 spl-associated-token-account = { version = "^3.0" }
 orca_whirlpools_core = { path = "../core", features = ["floats"] }
 orca_whirlpools_client = { path = "../client", features = ["core-types"] }
