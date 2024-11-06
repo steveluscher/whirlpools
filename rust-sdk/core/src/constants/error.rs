@@ -43,3 +43,6 @@ pub const INVALID_TRANSFER_FEE: CoreError = "Invalid transfer fee";
 
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub const INVALID_SLIPPAGE_TOLERANCE: CoreError = "Invalid slippage tolerance";
+
+#[cfg_attr(feature = "wasm", wasm_expose)]
+pub const TICK_INDEX_NOT_IN_ARRAY: CoreError = "Tick index not in array";
