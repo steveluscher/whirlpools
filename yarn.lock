@@ -4589,6 +4589,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust@workspace:rust-sdk/whirlpool"
   dependencies:
     "@orca-so/whirlpools-rust-client": "npm:*"
+    "@orca-so/whirlpools-rust-core": "npm:*"
   languageName: unknown
   linkType: soft
 
